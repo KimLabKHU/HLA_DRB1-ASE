@@ -1,7 +1,8 @@
-Start = Sys.time()
-#--------------------------------------------------------------------------------------------------------
-#argument prepare
-#--------------------------------------------------------------------------------------------------------
+# Lab Research - HLA-DRB1 ASE
+# 20210328 Sehwan Chun at Corestem, Inc.
+# 4.2. Remodeled ACPA association.R 
+
+#### 1. argument prepare ####
 args = commandArgs(trailingOnly=TRUE)
 if(length(args) == 3){
   input = args[1]
@@ -9,9 +10,7 @@ if(length(args) == 3){
   output = args[3]
 }
 
-#--------------------------------------------------------------------------------------------------------
-#Samples prepare
-#--------------------------------------------------------------------------------------------------------
+#### 2. Samples and weight loading ####
 SampleTable = read.table(input, header = T)
 HLATable = read.table(input, header = T, colClasses = "character")[,c(2,3)]
 SampleTable[,c(2,3)] = HLATable
@@ -37,6 +36,7 @@ for (i in 1:nrow(SampleTable)){
 }
 
 
+#### 3. remove samples with undefined HLA-DRB1 alleles ####
 removeUndefinedSamples = c()
 
 for (i in 1:nrow(SampleTable)){
@@ -46,12 +46,10 @@ for (i in 1:nrow(SampleTable)){
 }
 if(length(removeUndefinedSamples) != 0){
 SampleTable = SampleTable[-removeUndefinedSamples,]
-
-
-
 write.table(removeUndefinedSamples,"./removeUndefinedSamples", sep = "\t", quote= F, row.names = F, col.names = F)
-
 }
+
+#### 4. setup seperate two samples tables (standard, alternative) ####
 
 TotalTableCol = ncol(SampleTable)
 for (i in 1:nrow(SampleTable)){
@@ -87,10 +85,7 @@ write.table(SampleTable,"SampleTable", quote = F, sep = "\t", row.names = F)
 write.table(AltSampleTable,"AltSampleTable", quote = F, sep = "\t", row.names = F)
 
 
-#--------------------------------------------------------------------------------------------------------
-#Modeling
-#--------------------------------------------------------------------------------------------------------
-
+#### 5. set linear Regression model ####
 xnam = paste("SampleTable[,", c(6:TableCol,(TotalTableCol+1)),"]", sep="")
 fmla = as.formula(paste("SampleTable$INTCCP ~ ", paste(xnam, collapse= "+")))
 
@@ -106,6 +101,7 @@ Heterofmla = as.formula(paste("INTCCP ~ ", paste(Heteronam, collapse= "+")))
 
 HeteroA74Model = lm(Heterofmla, data = subset(AltSampleTable, SampleTable$A74 == 1))
 
+#### 6. print and save results ####
 print(nrow(SampleTable))
 print(nrow(subset(SampleTable, SampleTable$A74 == 1)))
 
@@ -142,8 +138,3 @@ rownames(results) = c("AIC","BIC","Adjusted R2", "Hetero A74_1", "Hetero A74_2",
 colnames(results) = c("Conv","Alt")
 write.table(results[6,2],"OBS.t", quote=F)
 write.table(results, output, quote= F)
-
-End = Sys.time()
-
-print(End-Start)
-print("FINISH!")
